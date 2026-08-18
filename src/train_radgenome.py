@@ -11,7 +11,7 @@ from args.train_radgenome.jhcpu7 import ModelArguments, DataArguments, TrainingA
 import numpy as np
 import torch              
 import random
-
+ 
 REGIONS = [
     'abdomen',
     'bone',
@@ -24,18 +24,18 @@ REGIONS = [
     'thyroid',
     'trachea and bronchie',
 ]
-
+ 
 @dataclass
 class DataCollator(object):
 
-    def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
+    def _collate_branch(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
         #print(instances) 'loss_reweight': reweight_tensor, 'key_words_query': emphasize_words
         lang_xs, vision_xs, mask_xs, region2areas, attention_masks, labels = tuple([instance[key] for instance in instances] for key in ('lang_x', 'vision_x', 'mask_x', 'region2area', 'attention_mask', 'label'))
-        
+
         lang_xs = torch.cat([_.unsqueeze(0) for _ in lang_xs], dim = 0)
         attention_masks = torch.cat([_.unsqueeze(0) for _ in attention_masks], dim = 0)
         labels = torch.cat([_.unsqueeze(0) for _ in labels], dim = 0)
-        
+
         vision_temp = {area: [] for area in REGIONS}
         mask_temp = {area: [] for area in REGIONS}
         # get the shape of the vision tensor
@@ -43,7 +43,7 @@ class DataCollator(object):
         mask_shape = next(iter(mask_xs[0].values())).shape
 
         useless_regions = []
-        
+
         for area in REGIONS:
             flag = False
             for i in range(len(vision_xs)):
@@ -58,19 +58,19 @@ class DataCollator(object):
                 useless_regions.append(area)
 
         images = torch.cat([vision['image'].unsqueeze(0) for vision in vision_xs], dim = 0)
-        
+
         # drop the useless regions from vision_temp
         for area in useless_regions:
             vision_temp.pop(area)
             mask_temp.pop(area)
         useful_regions = list(vision_temp.keys())
-    
+
         vision_xs = {area: torch.cat([_.unsqueeze(0) for _ in vision_temp[area]], dim = 0) for area in useful_regions}
-        # add image 
+        # add image
         vision_xs['image'] = images
 
         mask_xs = {area: torch.cat([_.unsqueeze(0) for _ in mask_temp[area]], dim = 0) for area in useful_regions}
-        
+
         # print(vision_xs.shape,vision_xs.dtype)
         return dict(
             lang_x=lang_xs,
@@ -80,7 +80,26 @@ class DataCollator(object):
             attention_mask=attention_masks,
             labels = labels,
         )
-        
+
+    def __call__(self, instances: Sequence[Dict]) -> Dict[str, Dict[str, torch.Tensor]]:
+        # each dataset item is {"full": {...}, "mask": {...}}; collate the two
+        # branches separately so CustomTrainer can forward/backward them independently
+        return dict(
+            full=self._collate_branch([instance['full'] for instance in instances]),
+            mask=self._collate_branch([instance['mask'] for instance in instances]),
+        )
+
+
+class CustomTrainer(Trainer):
+
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        full_output = model(**inputs['full'])
+        mask_output = model(**inputs['mask'])
+        loss = (full_output['loss'] + mask_output['loss']) / 2
+        if return_outputs:
+            return loss, {'full': full_output, 'mask': mask_output}
+        return loss
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
@@ -93,32 +112,37 @@ def main():
     set_seed(42)
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
-    print("Setup Data")
-    Train_dataset = RadGenomeDataset_Train(
-        text_tokenizer=model_args.tokenizer_path,
-        data_folder=data_args.data_folder,
-        mask_folder=data_args.mask_folder,
-        csv_file=data_args.report_file,
-        cache_dir=data_args.monai_cache_dir,
-    )
-
+ 
     print("Setup Model")
     model = Reg2RG(
         lang_model_path=model_args.lang_encoder_path,
         text_tokenizer_path=model_args.tokenizer_path,
         pretrained_visual_encoder=model_args.pretrained_visual_encoder,
+        pretrained_finegrain_visual_encoder=model_args.pretrained_finegrained_visual_encoder,
         pretrained_adapter=model_args.pretrained_adapter,
+        bank_npy_path=data_args.bank_npy_path,
     )
-    
-    trainer = Trainer(model=model, 
-                      train_dataset = Train_dataset, 
+
+    print("Setup Data")
+    print("!!!!")
+    Train_dataset = RadGenomeDataset_Train(
+        text_tokenizer=model.text_tokenizer,
+        image_padding_tokens=model.image_padding_tokens,
+        region_padding_tokens=model.region_padding_tokens,
+        data_folder=data_args.data_folder,
+        mask_folder=data_args.mask_folder,
+        csv_file=data_args.report_file,
+        cache_dir=data_args.monai_cache_dir,
+    )
+   
+    trainer = CustomTrainer(model=model,
+                      train_dataset = Train_dataset,
                       args = training_args,
                       data_collator=DataCollator(),
                       )
-
+ 
     trainer.train()
     trainer.save_state()
-      
+     
 if __name__ == "__main__":
     main()

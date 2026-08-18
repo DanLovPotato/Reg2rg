@@ -8,7 +8,7 @@ experiment_name="Reg2RG_smoketest"
 bf16=True
 
 # Device settings — EDIT to match the server (run `nvidia-smi` there first)
-cuda_devices="0,1"
+cuda_devices="1"
 
 # Torchrun settings
 master_port=25368
@@ -18,15 +18,17 @@ master_port=25368
 remote_base="/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT"
 
 # Paths — mirrors the folder layout under chestCT/ here:
-# llama_weights/, Reg2RG_weights/, smoke_data/reg2rg_data/dataset/...
-lang_encoder_path="$remote_base/llama_weights"
-tokenizer_path="$remote_base/llama_weights"
-pretrained_visual_encoder="$remote_base/Reg2RG_weights/RadFM_vit3d.pth"
-pretrained_adapter="$remote_base/Reg2RG_weights/RadFM_perceiver_fc.pth"
-data_folder="$remote_base/smoke_data/reg2rg_data/dataset/valid_preprocessed"
-mask_folder="$remote_base/smoke_data/reg2rg_data/dataset/valid_region_mask"
-report_file="$remote_base/smoke_data/reg2rg_data/dataset/radgenome_files/validation_region_report.csv"
-monai_cache_dir="$remote_base/smoke_data/reg2rg_data/cache"
+# weights/llama_weights/, weights/Reg2RG_weights/, data/smoke_CTimagedata/reg2rg_data/dataset/...
+lang_encoder_path="$remote_base/weights/llama_weights"
+tokenizer_path="$remote_base/weights/llama_weights"
+pretrained_visual_encoder="$remote_base/weights/Reg2RG_weights/RadFM_vit3d.pth"
+pretrained_finegrained_visual_encoder="$remote_base/weights/fvlm_weights/finetuned/checkpoint_040.pth"
+pretrained_adapter="$remote_base/weights/Reg2RG_weights/RadFM_perceiver_fc.pth"
+data_folder="$remote_base/data/smoke_CTimagedata/reg2rg_data/dataset/valid_preprocessed"
+mask_folder="$remote_base/data/smoke_CTimagedata/reg2rg_data/dataset/valid_region_mask"
+report_file="$remote_base/data/smoke_CTimagedata/reg2rg_data/dataset/radgenome_files/validation_region_report.csv"
+monai_cache_dir="$remote_base/data/smoke_CTimagedata/reg2rg_data/cache"
+bank_npy_path="$remote_base/weights/fvlm_weights/clip_report_embeddings.npz"
 output_dir="$remote_base/outputs/$experiment_name"
 deepspeed_config="../ds_configs/stage2.json"
 

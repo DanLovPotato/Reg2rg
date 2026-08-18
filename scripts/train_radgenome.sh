@@ -25,11 +25,13 @@ CUDA_VISIBLE_DEVICES=$cuda_devices torchrun --nproc_per_node=$nproc_per_node --m
     --lang_encoder_path "$lang_encoder_path" \
     --tokenizer_path "$tokenizer_path" \
     --pretrained_visual_encoder "$pretrained_visual_encoder" \
+    --pretrained_finegrained_visual_encoder "$pretrained_finegrained_visual_encoder" \
     --pretrained_adapter "$pretrained_adapter" \
     --data_folder "$data_folder" \
     --mask_folder "$mask_folder" \
     --report_file "$report_file" \
     --monai_cache_dir "$monai_cache_dir" \
+    --bank_npy_path "$bank_npy_path" \
     --output_dir "$output_dir" \
     --deepspeed "$deepspeed_config" \
     --per_device_train_batch_size $per_device_train_batch_size \

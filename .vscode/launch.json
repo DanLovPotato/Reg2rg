@@ -1,0 +1,69 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "python": "/mnt/local/data/dxiang23/conda/envs/reg2rg/bin/python"
+        },
+        {
+            "name": "Python: run.py (fvlm)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/Model/fvlm/run.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "python": "/mnt/local/data/dxiang23/conda/envs/reg2rg/bin/python",
+            "args": []
+        },
+        {
+            "name": "Python: train_radgenome.py (smoketest)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/train_radgenome.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "python": "/mnt/local/data/dxiang23/conda/envs/reg2rg/bin/python",
+            "cwd": "${workspaceFolder}/scripts",
+            "env": {
+                "RANK": "0",
+                "LOCAL_RANK": "0",
+                "WORLD_SIZE": "1",
+                "MASTER_ADDR": "localhost",
+                "MASTER_PORT": "29501"
+            },
+            "args": [
+                "--bf16", "True",
+                "--lang_encoder_path", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/weights/llama_weights",
+                "--tokenizer_path", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/weights/llama_weights",
+                "--pretrained_visual_encoder", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/weights/Reg2RG_weights/RadFM_vit3d.pth",
+                "--pretrained_finegrained_visual_encoder", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/weights/fvlm_weights/finetuned/checkpoint_040.pth",
+                "--pretrained_adapter", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/weights/Reg2RG_weights/RadFM_perceiver_fc.pth",
+                "--data_folder", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/data/smoke_CTimagedata/reg2rg_data/dataset/valid_preprocessed",
+                "--mask_folder", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/data/smoke_CTimagedata/reg2rg_data/dataset/valid_region_mask",
+                "--report_file", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/data/smoke_CTimagedata/reg2rg_data/dataset/radgenome_files/validation_region_report.csv",
+                "--monai_cache_dir", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/data/smoke_CTimagedata/reg2rg_data/cache",
+                "--bank_npy_path", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/weights/fvlm_weights/clip_report_embeddings.npz",
+                "--output_dir", "/mnt/researchdrive/ptiwari9/Staff_Trainee_Folders/Dan/chestCT/outputs/Reg2RG_smoketest_debug",
+                "--deepspeed", "${workspaceFolder}/ds_configs/stage2.json",
+                "--per_device_train_batch_size", "1",
+                "--num_train_epochs", "200",
+                "--gradient_accumulation_steps", "1",
+                "--evaluation_strategy", "no",
+                "--save_strategy", "epoch",
+                "--save_total_limit", "1",
+                "--learning_rate", "5e-5",
+                "--weight_decay", "0.0",
+                "--warmup_steps", "0",
+                "--lr_scheduler_type", "constant_with_warmup",
+                "--dataloader_num_workers", "4",
+                "--run_name", "Reg2RG_smoketest",
+                "--logging_steps", "1"
+            ]
+        }
+    ]
+}
